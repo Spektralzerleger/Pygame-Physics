@@ -1,5 +1,5 @@
 """Editor: Eugen Dizer
-Last modified: 11.07.2020
+Last modified: 28.07.2020
 
 
 This is a template code for pygame...
@@ -137,23 +137,63 @@ def count_down(x, y, font, color):
             countdown = False
             start = True
 
-def input_box(x, y, length, height, color_normal, color_active, text):    ######## Make a class from this!
-    global active, N
-    if (mouse[0] > x) and (mouse[0] < x + length) and (mouse[1] > y) and (mouse[1] < y + height):
-        pygame.draw.rect(screen, color_active, (x, y, length, height), 2)
-        if click[0] == 1:
-            active = True
-    elif active == True:
-        pygame.draw.rect(screen, color_active, (x, y, length, height), 2)
-        if click[0] == 1:
-            active = False
-    else:
-        pygame.draw.rect(screen, color_normal, (x, y, length, height), 2)
 
-    draw_text(x, y, length, height, font, text, color_normal)
-    
-    if len(text) == 1:
-        N = int(text)   ### FIX ball initialization
+class Input:
+    def __init__(self, x, y, length, height, color_normal, color_active, func):
+        self.x = x
+        self.y = y
+        self.length = length
+        self.height = height
+        self.color_normal = color_normal
+        self.color_active = color_active
+        self.func = func
+
+        self.active = False
+        # Initial entries in input boxes
+        if self.func == "N":
+            self.input = "3"
+        elif self.func == "g":
+            self.input = "9.81"
+        elif self.func == "e":
+            self.input = "0.9"
+        else:
+            self.input = "1"
+
+    def draw_input_box(self):
+        if (mouse[0] > self.x) and (mouse[0] < self.x + self.length) and (mouse[1] > self.y) and (mouse[1] < self.y + self.height):
+            pygame.draw.rect(screen, self.color_active, (self.x, self.y, self.length, self.height), 2)
+            if click[0] == 1:
+                self.active = True
+        elif self.active == True:
+            pygame.draw.rect(screen, self.color_active, (self.x, self.y, self.length, self.height), 2)
+            if click[0] == 1:
+                self.active = False
+        else:
+            pygame.draw.rect(screen, self.color_normal, (self.x, self.y, self.length, self.height), 2)
+
+        draw_text(self.x, self.y, self.length, self.height, font, self.input, self.color_normal) ### Display input
+
+        ### Functionality
+        if self.func == "N":
+            global N, Inputs   ### FIX
+            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE) # Could adjust text size
+
+            if len(self.input) == 1:
+                N = int(self.input)   ### FIX ball initialization
+        
+        else:
+            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE)
+
+
+def draw_ball_height(x, y, length, height, color):
+    global max_height
+    current_height = int(screen_height - balls[0].y)
+    draw_text(x - 40, y, length, height, font, "h = ", color)
+    draw_text(x, y, length, height, font, str(screen_height - initial_height), color) # Initial height
+    if current_height > max_height:
+        max_height = current_height
+    draw_text(x - 40, y + 30, length, height, font, "H = ", color)
+    draw_text(x, y + 30, length, height, font, str(max_height), color)  # Max height
 
 
 
@@ -177,18 +217,33 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 
 # Initialize balls, generalize
+initial_height = 250
+max_height = screen_height - initial_height
+
 balls = []
-balls.append(Ball(250, 250, 0, 0, r[0], m[0], WHITE))
+balls.append(Ball(250, initial_height, 0, 0, r[0], m[0], WHITE))
 radius = r[0]
+# Mass can define how big the ball is
 for i in range(N - 1):
-    balls.append(Ball(250, 250 + (radius + r[i+1]), 0, 0, r[i + 1], m[i + 1], WHITE))
+    balls.append(Ball(250, initial_height + (radius + r[i+1]), 0, 0, r[i + 1], m[i + 1], WHITE))
     radius += 2 * r[i+1] + 2
 
 # Make a copy for restart function, FIX!!!
 InitialBalls = balls
 
-text = ""
-active = False
+# Initialize input boxes
+Inputs = []
+N_Input = Input(65, 100, 60, 30, WHITE, RED, "N")
+g_Input = Input(235, 100, 60, 30, WHITE, RED, "g")
+e_Input = Input(410, 100, 60, 30, WHITE, RED, "e")
+Inputs.append(N_Input)
+Inputs.append(g_Input)
+Inputs.append(e_Input)
+# Make N input boxes for m1, m2, ..., mN. E.g.
+for i in range(N):
+    Inputs.append(Input(65, 200 + 40 * i, 60, 30, WHITE, RED, "m{}".format(i+1)))
+
+
 countdown = False
 start = False
 finished = False
@@ -204,13 +259,15 @@ while True:
             pygame.quit()
             sys.exit()
         if event.type == pygame.KEYDOWN:
-            if active == True:
-                if event.key == pygame.K_BACKSPACE:
-                    text = text[:-1]
-                else:
-                    if len(text) < 1:
-                        text += event.unicode
-                        active = False
+            # Loop over all input boxes
+            for i in range(len(Inputs)):
+                if Inputs[i].active == True:
+                    if event.key == pygame.K_BACKSPACE:
+                        Inputs[i].input = Inputs[i].input[:-1]
+                    else:
+                        if len(Inputs[i].input) < 1:  ### Only for N_Input
+                            Inputs[i].input += event.unicode
+                            Inputs[i].active = False
 
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
@@ -219,25 +276,26 @@ while True:
     screen.fill(bg_color)
 
     if (start == False) and (countdown == False):
-        for i in range(N):
-            balls[i].draw()
-            start_button(200, 20, 100, 50, WHITE, RED, BLACK)
-            draw_text(0, 80, 80, 40, font, "N =", WHITE) # Combine these two
-            input_box(65, 86, 60, 30, WHITE, RED, text)
+        start_button(200, 20, 100, 50, WHITE, RED, BLACK)
+        for i in range(len(Inputs)):
+            Inputs[i].draw_input_box()
+        for j in range(N):
+            balls[j].draw()
     if (start == False) and (countdown == True):
+        count_down(226, 20, font, RED)
         for i in range(N):
             balls[i].draw()
-            count_down(226, 20, font, RED)
     if start == True:
         restart_button(200, 20, 100, 50, WHITE, RED, BLACK)
+        draw_ball_height(100, 100, 30, 20, WHITE)
         for i in range(N):
             balls[i].draw()
             balls[i].move(dt)
         for i in range(N - 1):
             balls[i].ball_collision(balls[i + 1], dt)
     if finished == True:  # FIX: When it's finished?
+        restart_button(200, 20, 100, 50, WHITE, RED, BLACK)
         for i in range(N):
             balls[i].draw()
-            restart_button(200, 20, 100, 50, WHITE, RED, BLACK)
 
     pygame.display.flip()
