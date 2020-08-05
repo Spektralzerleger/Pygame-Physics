@@ -1,17 +1,6 @@
 """Editor: Eugen Dizer
 Last modified: 05.08.2020
 
-
-This is a template code for pygame...
-Draw your things here and implement the physics! 
-In the end, I want to have a program with a lot of physics simulation tools.
-
-Ideas:
-    * Ball Pyramid
-    * Ray deflection
-    * ...
-
-
 This is the so called ball pyramid or super jump, also known as Galilean cannon:
 Some balls are stacked and released from a height h. When they arrive at the ground, they are
 reflected and the smallest ball on the top is fired out to a very large height.
