@@ -1,5 +1,5 @@
 """Editor: Eugen Dizer
-Last modified: 01.08.2020
+Last modified: 05.08.2020
 
 
 This is a template code for pygame...
@@ -18,16 +18,17 @@ reflected and the smallest ball on the top is fired out to a very large height.
 Implement the balls, some graphics and the physics of the collision:
 https://de.wikipedia.org/wiki/Doppelball-Versuch
 
-To Do: Fix bugs, add information, theoretical max height for 2 or 3 balls, ...
+To Do: Fix bugs, add information, theoretical max height for 2 or 3 balls, add collision sound...
 """
 
 import pygame, sys
 import numpy as np
 import os
-os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (40, 80)
+
+os.environ["SDL_VIDEO_WINDOW_POS"] = "%d,%d" % (40, 80)
 
 # Default radii and masses of the balls
-r = [5, 10, 15]
+r = [5, 7, 10]
 m = [1, 1.2, 1.5]
 
 # Default number of balls
@@ -56,7 +57,7 @@ class Ball:
     def move(self, t):
         # Gravity
         self.vy += g * t
-        self.y += self.vy * t    
+        self.y += self.vy * t
 
         self.screen_collision()
 
@@ -64,26 +65,30 @@ class Ball:
         # Collision with the left screen side
         if self.x - self.radius <= 0:
             self.x = 0 + self.radius
-            self.vx *= - 1
+            self.vx *= -1
         # Collision with the right screen side
         if self.x + self.radius >= screen_width:
             self.x = screen_width - self.radius
-            self.vx *= - 1
+            self.vx *= -1
         # Collision with the top of the screen
         if (self.y - self.radius <= 0) and (self.vy <= 0):
             pass
         # Collision with the bottom of the screen
         if (self.y + self.radius >= screen_height) and (self.vy >= 0):
             self.y = screen_height - self.radius
-            self.vy *= - 1
+            self.vy *= -1
             self.vy *= elasticity
         # Stop the ball when it's resting on the ground, FIX!!! Do I need it?
         if (self.vy == 0) and (self.y + self.radius - screen_height == screen_height):
-            self.vy = 0 ## FIX
+            self.vy = 0  ## FIX
 
     def ball_collision(self, otherBall, t):
         if np.sqrt((self.x - otherBall.x) ** 2 + (self.y - otherBall.y) ** 2) <= self.radius + otherBall.radius:
-            if (self.vy >= 0 and otherBall.vy <= 0) or (self.vy <= 0 and otherBall.vy <= 0 and abs(self.vy) < abs(otherBall.vy)) or (self.vy >= 0 and otherBall.vy >= 0 and self.vy > otherBall.vy):
+            if (
+                (self.vy >= 0 and otherBall.vy <= 0)
+                or (self.vy <= 0 and otherBall.vy <= 0 and abs(self.vy) < abs(otherBall.vy))
+                or (self.vy >= 0 and otherBall.vy >= 0 and self.vy > otherBall.vy)
+            ):
                 self.y = otherBall.y - (self.radius + otherBall.radius)
                 vy = self.vy
                 self.vy = (2 * otherBall.mass * otherBall.vy + (self.mass - otherBall.mass) * self.vy) / (self.mass + otherBall.mass)
@@ -96,12 +101,14 @@ def textObject(text, font, color):
     textSurface = font.render(text, True, color)
     return textSurface, textSurface.get_rect()
 
+
 def draw_text(x, y, length, height, font, message, color):
     textSurface, textRect = textObject(message, font, color)
     textRect.center = ((x + length / 2)), ((y + height / 2))
     screen.blit(textSurface, textRect)
 
-def start_button(x, y, length, height, color_normal, color_active, text_color): ### Could make also class with start and restart function...
+
+def start_button(x, y, length, height, color_normal, color_active, text_color):  ### Could make also class with start and restart function...
     global countdown, start_ticks
     if (mouse[0] > x) and (mouse[0] < x + length) and (mouse[1] > y) and (mouse[1] < y + height):
         pygame.draw.rect(screen, color_active, (x, y, length, height))
@@ -113,6 +120,7 @@ def start_button(x, y, length, height, color_normal, color_active, text_color): 
         pygame.draw.rect(screen, color_normal, (x, y, length, height))
 
     draw_text(x, y, length, height, font, "Start", text_color)
+
 
 def restart_button(x, y, length, height, color_normal, color_active, text_color):
     global start, countdown, balls, max_height
@@ -130,12 +138,13 @@ def restart_button(x, y, length, height, color_normal, color_active, text_color)
 
     draw_text(x, y, length, height, font, "Restart", text_color)
 
+
 def count_down(x, y, font, color):
     global countdown, start
     if countdown == True:
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000
         if int(seconds) < 3:
-            draw_text(x, y, 50, 50, font, str(3-int(seconds)), color)
+            draw_text(x, y, 50, 50, font, str(3 - int(seconds)), color)
         else:
             countdown = False
             start = True
@@ -167,26 +176,26 @@ class Input:
         if (mouse[0] > self.x) and (mouse[0] < self.x + self.length) and (mouse[1] > self.y) and (mouse[1] < self.y + self.height):
             pygame.draw.rect(screen, self.color_active, (self.x, self.y, self.length, self.height), 2)
             if click[0] == 1:
-                self.active = True
+                self.active = True  # Activate button when you click on it
         elif self.active == True:
             pygame.draw.rect(screen, self.color_active, (self.x, self.y, self.length, self.height), 2)
             if click[0] == 1:
-                self.active = False
+                self.active = False  # Deactivate button when you click somewhere else
         else:
             pygame.draw.rect(screen, self.color_normal, (self.x, self.y, self.length, self.height), 2)
 
-        draw_text(self.x, self.y, self.length, self.height, font, self.input, self.color_normal) ### Display input
+        draw_text(self.x, self.y, self.length, self.height, font, self.input, self.color_normal)  ### Display input
 
         ### Functionality
         if self.func == "N":
-            global N, r, m, balls, Inputs, I   ### FIX input functions, fix bad input like ß, ...!!
-            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE) # Could adjust text size
+            global N, r, m, balls, Inputs, I
+            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE)  # Could adjust text size
 
             if len(self.input) > 0:
                 current_N = int(self.input)
                 if current_N != N:
                     N = current_N
-                    r = list((5*np.ones(N)).astype(np.uint8))
+                    r = list((5 * np.ones(N)).astype(np.uint8))
                     m = list(np.ones(N).astype(np.uint8))
                     balls = init_balls()
                     Inputs = init_inputs()
@@ -194,27 +203,29 @@ class Input:
 
         elif self.func == "g":
             global g
-            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE) # Could adjust text size
+            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE)  # Could adjust text size
 
             if len(self.input) > 0:
                 g = 100 * float(self.input)
 
         elif self.func == "e":
             global elasticity
-            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE) # Could adjust text size
+            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE)  # Could adjust text size
 
             if len(self.input) > 0:
                 elasticity = float(self.input)
 
         elif self.func[0] == "m":
-            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE) # Could adjust text size
+            draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE)  # Could adjust text size
 
             if len(self.input) > 0:
                 # Assumption: box name starts with m and is followed by mass number
                 m[int(self.func[1:]) - 1] = float(self.input)
-                # set radius...
+                if float(self.input) > 10:
+                    r[int(self.func[1:]) - 1] = 5 * 10
+                else:
+                    r[int(self.func[1:]) - 1] = round(5 * float(self.input))
                 balls = init_balls()
-            ##### FIX!! mass setting! and radius with mass...
 
         else:
             draw_text(self.x - 65, self.y + 5, self.length + 20, self.height - 10, font, self.func + " = ", WHITE)
@@ -224,12 +235,11 @@ def draw_ball_height(x, y, length, height, color):
     global max_height
     current_height = int(screen_height - balls[0].y)
     draw_text(x - 40, y, length, height, font, "h = ", color)
-    draw_text(x, y, length, height, font, str(screen_height - initial_height), color) # Initial height
+    draw_text(x, y, length, height, font, str(screen_height - initial_height), color)  # Initial height
     if current_height > max_height:
         max_height = current_height
     draw_text(x - 40, y + 30, length, height, font, "H = ", color)
     draw_text(x, y + 30, length, height, font, str(max_height), color)  # Max height
-
 
 
 # Initialize pygame window
@@ -255,16 +265,18 @@ BLUE = (0, 0, 255)
 initial_height = 250
 max_height = screen_height - initial_height
 
+
 def init_balls():
     balls = []
-    balls.append(Ball(250, initial_height, 0, 0, r[0], m[0], WHITE))
+    balls.append(Ball(250, initial_height, 0, 0, r[0], m[0], WHITE))  # Top ball
     radius = r[0]
-    # Mass can define how big the ball is, FIX
+    # All the other balls
     for i in range(N - 1):
-        balls.append(Ball(250, initial_height + (radius + r[i+1]), 0, 0, r[i + 1], m[i + 1], WHITE))
-        radius += 2 * r[i+1] + 2
+        balls.append(Ball(250, initial_height + (radius + r[i + 1]), 0, 0, r[i + 1], m[i + 1], WHITE))
+        radius += 2 * r[i + 1]
 
     return balls
+
 
 balls = init_balls()
 
@@ -279,16 +291,16 @@ def init_inputs():
     Inputs.append(e_Input)
     # Make N input boxes for m1, m2, ..., mN
     for i in range(N):
-        Inputs.append(Input(65, 200 + 40 * i, 60, 30, WHITE, RED, "m{}".format(i+1)))
+        Inputs.append(Input(65, 200 + 40 * i, 60, 30, WHITE, RED, "m{}".format(i + 1)))
 
     return Inputs
+
 
 Inputs = init_inputs()
 I = len(Inputs)
 
 countdown = False
 start = False
-finished = False
 
 # Game loop
 while True:
@@ -307,8 +319,14 @@ while True:
                     if event.key == pygame.K_BACKSPACE:
                         Inputs[i].input = Inputs[i].input[:-1]
                     else:
-                        if len(Inputs[i].input) < 4:  ### For N_Input??? FIX INPUT length...
-                            Inputs[i].input += event.unicode
+                        if len(Inputs[i].input) < 4:
+                            # Input should be integer or float
+                            if event.unicode in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."]:
+                                Inputs[i].input += event.unicode
+                            # Handling bad input
+                            if (Inputs[i].input[0] == ".") or (Inputs[i].input.count(".") > 1):
+                                Inputs[i].input = Inputs[i].input[:-1]
+                        else:
                             Inputs[i].active = False
 
     mouse = pygame.mouse.get_pos()
@@ -336,10 +354,7 @@ while True:
             balls[i].draw()
             balls[i].move(dt)
         for i in range(N - 1):
-            balls[i].ball_collision(balls[i + 1], dt) # FIX: ball collision for N > 3! Maybe just for i, j...
-    if finished == True:  # FIX: When it's finished? Do I need it?
-        restart_button(200, 20, 100, 50, WHITE, RED, BLACK)
-        for i in range(N):
-            balls[i].draw()
+            for j in range(i + 1, N):
+                balls[i].ball_collision(balls[j], dt)
 
     pygame.display.flip()
